@@ -1,0 +1,47 @@
+name: "Listen - Create Infrastructure"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to create infrastructure for"
+        required: true
+        default: dev
+
+jobs:
+  terraform:
+    name: "${{github.event.inputs.environment}}-terraform"
+    runs-on: ubuntu-latest
+    environment: ${{github.event.inputs.environment}}
+    defaults:
+      run:
+        shell: bash
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init
+        run: terraform init -backend-config="resource_group_name=${{ secrets.RESOURCE_GROUP_NAME }}" -backend-config="storage_account_name=${{ secrets.STORAGE_ACCOUNT_NAME }}" -backend-config="container_name=tfstate" -backend-config="key=listen-${{ github.event.inputs.environment }}.tfstate"
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -input=false -var="spn_client_id=${{ secrets.AZURE_CLIENT_ID }}" -var="spn_client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" -var="azure_tenant_id=${{ secrets.AZURE_TENANT_ID }}" -var="azure_subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+
+      - name: Terraform Apply
+        run: terraform apply -input=false -var="spn_client_id=${{ secrets.AZURE_CLIENT_ID }}" -var="spn_client_secret=${{ secrets.AZURE_CLIENT_SECRET }}" -var="azure_tenant_id=${{ secrets.AZURE_TENANT_ID }}" -var="azure_subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" -input=false -auto-approve
+

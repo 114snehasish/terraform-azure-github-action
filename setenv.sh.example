@@ -1,0 +1,5 @@
+#!/bin/bash
+export TF_VAR_spn_client_id=YOUR_SERVICE_PRICIPAL_CLIENT_ID
+export TF_VAR_spn_client_secret=YOUR_SERVICE_PRINCIPAL_CLIENT_SECRET
+export TF_VAR_azure_subscription_id=YOUR_SUBSCRIPTION_ID
+export TF_VAR_azure_tenant_id=YOUR_TENANT_ID
